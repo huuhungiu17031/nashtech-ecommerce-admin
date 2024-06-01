@@ -1,35 +1,26 @@
-import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
-import AuthenLayout from "./layout/AuthenLayout";
-import { DashboardLayout, DefaultLayout } from "./layout";
-import { Category, Chart, ListProduct, Login, Product } from "./components";
-import { ListCategory } from "./components/category/ListCategory";
-
+import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import { CategoryForm, CategoryTable, ProductTable, Login, ProductFormPage } from './components';
+import { DefaultLayout } from './layout';
+import AuthOutlet from '@auth-kit/react-router/AuthOutlet';
 
 function App() {
-
-  return (
-    <Router>
-      <Routes>
-        <Route element={<AuthenLayout />}>
-          <Route path="/" element={<DefaultLayout />}>
-            <Route path="product" element={
-              <DashboardLayout>
-                <Product />
-              </DashboardLayout>
-            }>
-              <Route path="chart" element={<Chart />} />
-              <Route path="list" element={<ListProduct />} />            
-            </Route>
-            <Route path="category" element={<DashboardLayout><Category /></DashboardLayout>}>
-              <Route path="list" element={<ListCategory />} />
-            </Route>
-            <Route path="/" element={<Navigate to="product" />} />
-          </Route>
-        </Route>
-        <Route element={<Login />} path="login"></Route>
-      </Routes>
-    </Router>
-  )
+    return (
+        <Router>
+            <Routes>
+                <Route element={<AuthOutlet fallbackPath={'login'} />}>
+                    <Route element={<DefaultLayout />}>
+                        <Route path="category" element={<CategoryTable />} />
+                        <Route path="category/form/:id" element={<CategoryForm />} />
+                        <Route path="product" element={<ProductTable />} />
+                        <Route path="product/form/:id" element={<ProductFormPage />} />
+                        <Route path="category/form" element={<Navigate to="/category" />} />
+                        <Route path="/" element={<Navigate to="/category" />} />
+                    </Route>
+                </Route>
+                <Route element={<Login />} path="login"></Route>
+            </Routes>
+        </Router>
+    );
 }
 
-export default App
+export default App;
