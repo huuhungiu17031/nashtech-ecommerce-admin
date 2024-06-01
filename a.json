@@ -1,0 +1,15 @@
+{
+    "productName": "Iphone 120",
+    "price": 19250000,
+    "stockQuantity": 300,
+    "isPublish": false,
+    "productImageUrls": [
+        "images/iphone15-promax-1.png",
+        "images/iphone15-promax-2.png",
+        "images/iphone15-promax-3.png",
+        "images/iphone15-promax-4.png"
+    ],
+    "description": "<ul class='preserveHtml' class='preserveHtml' class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27;><li class='preserveHtml' class='preserveHtml' class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=\"ql-align-justify\">Hiệu năng vượt trội - Chip Apple A15 Bionic mạnh mẽ, hỗ trợ mạng 5G tốc độ cao</li><li class='preserveHtml' class='preserveHtml' class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=\"ql-align-justify\">Không gian hiển thị sống động - Màn hình 6.1\" Super Retina XDR độ sáng cao, sắc nét</li></ul><p class='preserveHtml' class='preserveHtml' class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27; class=&#x27;preserveHtml&#x27;>&#013;</p>",
+    "categoryId": 1,
+    "brandId": 1
+}
