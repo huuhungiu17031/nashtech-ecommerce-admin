@@ -1,24 +1,32 @@
 import { updateCategory, useGetCategoriesBackOffice } from '@/services';
 import { AUDIT_PROPERTIES, CategoryInterface, CategoryTableInterface, QUERY_KEY } from '@/shared';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button, Space, Statistic, Table, TableProps, Tag, Col, Row } from 'antd';
-import { useNavigate } from 'react-router-dom';
+import { Button, Statistic, Table, TableProps, Col, Row, Pagination, PaginationProps, Tooltip } from 'antd';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { notificationError, notificationSuccess } from '../notification';
-import { renderTooltipWithTag } from '@/utils';
+import { formatPage, renderTooltipWithTag } from '@/utils';
+import { EditOutlined } from '@ant-design/icons';
 
+const searchParamsInit = {
+    page: '0',
+    // size: '10',
+};
 export const CategoryTable = () => {
-    const { data: dataSource, isLoading } = useGetCategoriesBackOffice();
+    const [searchParams, setSearchParams] = useSearchParams(searchParamsInit);
+    const params = Object.fromEntries(searchParams.entries());
+    const handleChangeCategory = (id: number) => navigate(`/category/form/${id}`);
+    const { page } = params;
+    const { data: dataSource, isLoading } = useGetCategoriesBackOffice(page);
     const queryClient = useQueryClient();
     const navigate = useNavigate();
-
-    const handleChangeCategory = (id: number) => navigate(`/category/form/${id}`);
 
     const handleUpdateCategory = useMutation({
         mutationFn: (category: CategoryInterface) => updateCategory(category),
         onSuccess: () => {
             notificationSuccess('Update category successfully');
+            const p = formatPage(page);
             queryClient.invalidateQueries({
-                queryKey: [QUERY_KEY.categoriesBackoffice],
+                queryKey: [QUERY_KEY.categoriesBackoffice, { p }],
             });
         },
         onError: error => {
@@ -26,6 +34,10 @@ export const CategoryTable = () => {
             navigate('/category');
         },
     });
+
+    const onChange: PaginationProps['onChange'] = pageNumber => {
+        setSearchParams({ ...params, page: pageNumber.toString() });
+    };
 
     const columns: TableProps<CategoryTableInterface>['columns'] = [
         {
@@ -44,12 +56,7 @@ export const CategoryTable = () => {
         {
             title: 'Created Date',
             dataIndex: AUDIT_PROPERTIES.CREATED_AT,
-            render: time => time && renderTooltipWithTag('Created Date', new Date(time).toLocaleString(), '#87d068'),
-        },
-        {
-            title: 'Created By',
-            dataIndex: AUDIT_PROPERTIES.CREATED_BY,
-            render: email => email && renderTooltipWithTag('Created By', email),
+            render: time => time && renderTooltipWithTag('Created Date', new Date(time).toLocaleString()),
         },
         {
             title: 'Last Modified Date',
@@ -57,62 +64,60 @@ export const CategoryTable = () => {
             render: time => time && renderTooltipWithTag('Last Modified Date', new Date(time).toLocaleString()),
         },
         {
-            title: 'Last Modified By',
-            dataIndex: AUDIT_PROPERTIES.UPDATED_BY,
-            render: email => email && renderTooltipWithTag('Last Modified By', email),
-        },
-        {
-            title: 'Status',
-            dataIndex: 'isPublished',
-            render: isPublished => {
-                let color = isPublished ? 'geekblue' : 'green';
-                return <Tag color={color}>{isPublished.toString().toUpperCase()}</Tag>;
-            },
-        },
-        {
             title: 'Action',
             render: (_, record) => (
-                <Space size="middle">
-                    {record.isPublished ? (
-                        <Button
-                            type="primary"
-                            danger
-                            onClick={() => {
-                                const { id, categoryDescription, categoryName, icon } = record;
-                                handleUpdateCategory.mutate({
-                                    id,
-                                    categoryDescription,
-                                    categoryName,
-                                    isPublished: false,
-                                    icon,
-                                });
-                            }}>
-                            DeList
-                        </Button>
-                    ) : (
-                        <Button
-                            type="primary"
-                            onClick={() => {
-                                const { id, categoryDescription, categoryName, icon } = record;
-                                handleUpdateCategory.mutate({
-                                    id,
-                                    categoryDescription,
-                                    categoryName,
-                                    isPublished: true,
-                                    icon,
-                                });
-                            }}>
-                            Publish
-                        </Button>
-                    )}
-                    <Button onClick={() => navigate(`/category/form/${record.id}`)}>Edit</Button>
-                </Space>
+                <Row>
+                    <Col span={12}>
+                        {record.isPublished ? (
+                            <Button
+                                type="primary"
+                                danger
+                                onClick={() => {
+                                    const { id, categoryDescription, categoryName, icon } = record;
+                                    handleUpdateCategory.mutate({
+                                        id,
+                                        categoryDescription,
+                                        categoryName,
+                                        isPublished: false,
+                                        icon,
+                                    });
+                                }}>
+                                DeList
+                            </Button>
+                        ) : (
+                            <Button
+                                type="primary"
+                                onClick={() => {
+                                    const { id, categoryDescription, categoryName, icon } = record;
+                                    handleUpdateCategory.mutate({
+                                        id,
+                                        categoryDescription,
+                                        categoryName,
+                                        isPublished: true,
+                                        icon,
+                                    });
+                                }}>
+                                Publish
+                            </Button>
+                        )}
+                    </Col>
+                    <Col span={12}>
+                        <Tooltip title="edit">
+                            <Button
+                                onClick={() => navigate(`/category/form/${record.id}`)}
+                                type="primary"
+                                shape="circle"
+                                icon={<EditOutlined />}
+                            />
+                        </Tooltip>
+                    </Col>
+                </Row>
             ),
         },
     ];
     return (
         <div>
-            {dataSource && dataSource.length > 0 && (
+            {dataSource && dataSource.content.length > 0 && (
                 <>
                     <Row gutter={16}>
                         <Col span={8}>
@@ -123,18 +128,32 @@ export const CategoryTable = () => {
                         <Col span={8}>
                             <Statistic
                                 title="Active Categories"
-                                value={dataSource.filter((item: CategoryInterface) => item.isPublished).length}
+                                value={dataSource.content.filter((item: CategoryInterface) => item.isPublished).length}
                             />
                         </Col>
                         <Col span={8}>
                             <Statistic
-                                title="Active Categories"
-                                value={dataSource.filter((item: CategoryInterface) => !item.isPublished).length}
+                                title="None Active Categories"
+                                value={dataSource.content.filter((item: CategoryInterface) => !item.isPublished).length}
                             />
                         </Col>
                     </Row>
 
-                    <Table columns={columns} dataSource={dataSource} rowKey={record => record.id} loading={isLoading} />
+                    <Table
+                        pagination={false}
+                        columns={columns}
+                        dataSource={dataSource.content}
+                        rowKey={record => record.id}
+                        loading={isLoading}
+                    />
+
+                    <Pagination
+                        className="mt-10 flex justify-end"
+                        defaultCurrent={parseInt(page)}
+                        total={dataSource.totalElements}
+                        onChange={onChange}
+                        showTotal={total => `Total ${total} items`}
+                    />
                 </>
             )}
         </div>

@@ -5,10 +5,11 @@ import * as yup from 'yup';
 import { useMutation } from '@tanstack/react-query';
 import { login } from '@/services';
 import useSignIn from 'react-auth-kit/hooks/useSignIn';
-import { successfullAlert } from '../notification';
+import { errorAlert, successfullAlert } from '../notification';
 import { useNavigate } from 'react-router-dom';
 import { useAuthentication } from '@/context';
 import useIsAuthenticated from 'react-auth-kit/hooks/useIsAuthenticated';
+import { AxiosError } from 'axios';
 
 const { useToken } = theme;
 const { useBreakpoint } = Grid;
@@ -32,6 +33,7 @@ export const Login = () => {
                     token: accessToken,
                     type,
                 },
+                // refresh: refreshToken,
                 userState: {
                     email,
                     userId,
@@ -41,6 +43,9 @@ export const Login = () => {
                 updateAuthTokens(accessToken, refreshToken, isAuthenticated);
                 navigate('/');
             });
+        },
+        onError: (error: AxiosError) => {
+            errorAlert(error.response?.data.detail);
         },
     });
 

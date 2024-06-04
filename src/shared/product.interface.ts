@@ -15,6 +15,10 @@ export interface ProductFormInteraface {
 }
 export interface ProductTableInterface extends ProductInterFace, AuditInterface {}
 
+export interface UpdateProductInterface extends CreateProductInterface {
+    id: number;
+}
+
 export interface CreateProductInterface {
     productName: string;
     price: number;
@@ -24,4 +28,10 @@ export interface CreateProductInterface {
     description: string;
     categoryId: number;
     brandId: number;
+}
+
+export interface ProductGallery {
+    id: number;
+    imagePath: string;
+    thumbnail: boolean;
 }

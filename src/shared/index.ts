@@ -4,6 +4,7 @@ export * from './query.key';
 export * from './category.interface';
 export * from './constantAndMessage';
 export * from './brand.interface';
+export * from './user.interface';
 export interface AuditInterface {
     createdAt: string;
     createdBy: string;

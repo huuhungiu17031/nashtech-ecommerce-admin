@@ -3,7 +3,7 @@
     "trailingComma": "all",
     "arrowParens": "avoid",
     "tabWidth": 4,
-    "printWidth": 100,
+    "printWidth": 120,
     "insertPragma": false,
     "jsxSingleQuote": false,
     "useTabs": false,

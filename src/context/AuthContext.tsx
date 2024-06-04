@@ -1,4 +1,5 @@
 import { AuthContextInterface, AuthState, UserInfor, autoFetch } from '@/shared';
+import { InternalAxiosRequestConfig } from 'axios';
 import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
@@ -13,6 +14,14 @@ const initialAuthState: AuthState = {
 };
 
 const AuthContext = createContext<AuthContextInterface | undefined>(undefined);
+const exemptedUrls = ['login'];
+
+const checkMethodAndUrlInterceptor = (config: InternalAxiosRequestConfig) => {
+    if (config.method === 'get' && config.url && exemptedUrls.includes(config.url)) {
+        delete config.headers.Authorization;
+    }
+    return config;
+};
 
 const AppProvider = ({ children }: { children: ReactNode }) => {
     const [authState, setAuthState] = useState<AuthState>(initialAuthState);
@@ -22,10 +31,23 @@ const AppProvider = ({ children }: { children: ReactNode }) => {
     const bearerToken = 'Bearer ' + authState.accessToken;
     autoFetch.defaults.headers.common['Authorization'] = bearerToken;
     autoFetch.interceptors.request.use(
-        config => {
-            return config;
+        config => checkMethodAndUrlInterceptor(config),
+        function (error) {
+            return Promise.reject(error);
+        },
+    );
+
+    autoFetch.interceptors.response.use(
+        function (response) {
+            return response;
         },
         function (error) {
+            if (error.response.status === 401) {
+            }
+            if (error.response.status === 403) {
+            }
+            if (error.response.status === 11000) {
+            }
             return Promise.reject(error);
         },
     );
@@ -52,7 +74,7 @@ const AppProvider = ({ children }: { children: ReactNode }) => {
             currentState = { ...currentState, isAuthenticated };
         }
         setAuthState(currentState);
-    }, [auth, authHeader]);
+    }, [auth, authHeader, isAuthenticated]);
 
     const authContextValue = {
         ...authState,

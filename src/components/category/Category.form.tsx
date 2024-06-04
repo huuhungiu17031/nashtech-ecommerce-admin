@@ -5,13 +5,16 @@ import { CategoryInterface } from '@/shared';
 import { useMutation } from '@tanstack/react-query';
 import { notificationError, notificationSuccess } from '../notification';
 import { Col, Row } from 'antd';
+import { FormBrand } from '.';
 
 export const CategoryForm = () => {
     const { id } = useParams();
+    // @ts-ignore
     let categoryId = parseInt(id, 10);
 
     let { data } = useGetCategory(categoryId);
     const navigate = useNavigate();
+
     const mutationCreateCategory = useMutation({
         mutationFn: (category: CategoryInterface) => postCategory(category),
         onSuccess: () => {
@@ -55,7 +58,9 @@ export const CategoryForm = () => {
                         handleUpdateCategory={handleUpdateCategory}
                     />
                 </Col>
-                <Col span={12}></Col>
+                <Col span={12}>
+                    <FormBrand />
+                </Col>
             </Row>
         </>
     );

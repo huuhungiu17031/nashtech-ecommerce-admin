@@ -1,7 +1,6 @@
 export const formatPrice = ({
     price,
     locales = 'vi-VN',
-    style = 'currency',
     currency = 'VND',
 }: {
     price: number;
@@ -9,11 +8,10 @@ export const formatPrice = ({
     style?: string;
     currency?: string;
 }) => {
-    console.log(price);
     return (
         price &&
         price.toLocaleString(locales, {
-            style,
+            style: 'currency',
             currency,
         })
     );
