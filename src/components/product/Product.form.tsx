@@ -8,22 +8,20 @@ import {
     Form,
     Input,
     InputNumber,
-    Switch,
     Button,
     Select,
 } from 'antd';
-import { deleteObject, getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
 import { storage } from '@/configuration';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PlusOutlined } from '@ant-design/icons';
-// import { Field, useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useFormik } from 'formik';
 import { CategoryInterface } from '@/shared';
 import { BrandInterface } from '@/shared/brand.interface';
 import { useMutation } from '@tanstack/react-query';
-import { CreateProductInterface } from '@/shared/product.interface';
-import { postProduct } from '@/services';
+import { CreateProductInterface, UpdateProductInterface } from '@/shared/product.interface';
+import { postProduct, updateProduct } from '@/services';
 import { notificationError, notificationSuccess } from '../notification';
 import { useNavigate } from 'react-router-dom';
 
@@ -67,18 +65,36 @@ const initialValues = {
 };
 
 export const ProductForm = ({
-    id,
+    productId,
     categories,
     brands,
+    product,
+    productImages,
 }: {
-    id: number;
+    productId: number;
     categories: CategoryInterface[];
     brands: BrandInterface[];
+    product: UpdateProductInterface;
+    productImages: any;
 }) => {
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewImage, setPreviewImage] = useState('');
     const [fileList, setFileList] = useState<UploadFile[]>([]);
     const navigate = useNavigate();
+    useEffect(() => {
+        if (productImages && productImages.length > 0) {
+            const listImage = productImages.map((item: any) => {
+                const prefix = item.imagePath.split('/')[1];
+                const targetString = prefix.split('_');
+                return {
+                    uid: targetString[0],
+                    lastModified: targetString[1],
+                    url: item.url,
+                };
+            });
+            setFileList([...listImage]);
+        }
+    }, [productImages]);
     const handlePreview = async (file: UploadFile) => {
         if (!file.url && !file.preview) {
             file.preview = await getBase64(file.originFileObj as FileType);
@@ -87,13 +103,14 @@ export const ProductForm = ({
         setPreviewImage(file.url || (file.preview as string));
         setPreviewOpen(true);
     };
-    console.log(brands);
+
     const handleChange: UploadProps['onChange'] = ({ fileList: newFileList }) => {
+        // console.log(fileList);
         setFileList(newFileList);
     };
 
     const customRequest = ({ file, onSuccess, onError, onProgress }: any) => {
-        const storageRef = ref(storage, `images/${file.uid + file.lastModified}`);
+        const storageRef = ref(storage, formatImageString(file.uid, file.lastModified?.toString()));
         const uploadTask = uploadBytesResumable(storageRef, file);
 
         uploadTask.on(
@@ -117,6 +134,23 @@ export const ProductForm = ({
             },
         );
     };
+    useEffect(() => {
+        if (product) {
+            const { productName, stockQuantity, price, isFeatured, description, brandId, categoryId } = product;
+
+            formik.setFieldValue('productName', productName);
+            formik.setFieldValue('price', price);
+            formik.setFieldValue('stockQuantity', stockQuantity);
+            formik.setFieldValue('description', description);
+            formik.setFieldValue('brandId', brandId);
+            formik.setFieldValue('categoryId', categoryId);
+            formik.setFieldValue('isFeatured', isFeatured);
+        }
+        return () => {
+            formik.resetForm();
+            formik.setValues(initialValues); // This ensures the values are cleared when the component unmounts
+        };
+    }, [product]);
 
     const beforeUpload = (file: FileType) => {
         const isImage = file.type.startsWith('image/');
@@ -134,8 +168,7 @@ export const ProductForm = ({
 
     const handleRemove = async (file: UploadFile) => {
         try {
-            const storageRef = ref(storage, `images/${file.uid + file.lastModified}`);
-            await deleteObject(storageRef);
+            // const id = formatImageString(file.uid, file.lastModified?.toString());
             setFileList(prevList => prevList.filter(item => item.uid !== file.uid));
             message.success('Image removed successfully');
         } catch (error) {
@@ -154,22 +187,42 @@ export const ProductForm = ({
         },
     });
 
+    const mutationEditProduct = useMutation({
+        mutationFn: (data: UpdateProductInterface) => updateProduct(data),
+        onSuccess: message => {
+            notificationSuccess(message);
+            navigate('/product');
+        },
+    });
+
+    const formatImageString = (uid: string, lastModified: string | undefined) => {
+        return `images/${uid + '_' + lastModified}`;
+    };
+
     const formik = useFormik({
         initialValues,
         validationSchema,
         onSubmit: values => {
-            if (id === 0) {
-                const productImageUrls = fileList.map(file => `images/${file.uid + file.lastModified}`);
+            if (productId === 0) {
+                const productImageUrls = fileList.map(file =>
+                    formatImageString(file.uid, file.lastModified?.toString()),
+                );
                 const payload = {
                     ...values,
                     productImageUrls,
                 };
                 mutationCreateProduct.mutate(payload);
             } else {
-                // handleUpdateCategory({ ...values, id: categoryId });
+                const productImageUrls = fileList.map(file =>
+                    formatImageString(file.uid, file.lastModified?.toString()),
+                );
+                const payload = {
+                    ...values,
+                    productImageUrls,
+                    id: productId,
+                };
+                mutationEditProduct.mutate(payload);
             }
-            // console.log(values);
-            // console.log(fileList);
         },
     });
 
@@ -217,7 +270,6 @@ export const ProductForm = ({
             </Form.Item>
             <Form.Item
                 label="Price"
-                name="InputNumber"
                 validateStatus={formik.errors.price && formik.touched.price ? 'error' : ''}
                 help={formik.errors.price && formik.touched.price ? formik.errors.price : null}>
                 <InputNumber
@@ -229,7 +281,6 @@ export const ProductForm = ({
             </Form.Item>
             <Form.Item
                 label="Stock Quantity"
-                name="stockQuantity"
                 validateStatus={formik.errors.stockQuantity && formik.touched.stockQuantity ? 'error' : ''}
                 help={formik.errors.stockQuantity && formik.touched.stockQuantity ? formik.errors.stockQuantity : null}>
                 <InputNumber
@@ -241,27 +292,29 @@ export const ProductForm = ({
             </Form.Item>
             <Form.Item
                 label="Is Feature ?"
-                name="isFeatured"
-                valuePropName="checked"
                 validateStatus={formik.errors.isFeatured && formik.touched.isFeatured ? 'error' : ''}
                 help={formik.errors.isFeatured && formik.touched.isFeatured ? formik.errors.isFeatured : null}>
-                <Switch onChange={value => formik.setFieldValue('isFeatured', value)} />
+                <Select
+                    value={formik.values.isFeatured}
+                    onChange={value => formik.setFieldValue('isFeatured', value)}
+                    onBlur={() => formik.setFieldTouched('isFeatured', true)}>
+                    <Select.Option value={true}>TRUE</Select.Option>
+                    <Select.Option value={false}>FALSE</Select.Option>
+                </Select>
             </Form.Item>
             <Form.Item
                 label="Description"
-                name="description"
                 validateStatus={formik.errors.description && formik.touched.description ? 'error' : ''}
                 help={formik.errors.description && formik.touched.description ? formik.errors.description : null}>
                 <Input.TextArea
                     name="description"
                     value={formik.values.description}
                     onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
+                    onBlur={() => formik.setFieldTouched('description', true)}
                 />
             </Form.Item>
             <Form.Item
                 label="Category"
-                name="categoryId"
                 rules={[{ required: true, message: 'Please select the category!' }]}
                 validateStatus={formik.errors.categoryId && formik.touched.categoryId ? 'error' : ''}
                 help={formik.errors.categoryId && formik.touched.categoryId ? formik.errors.categoryId : null}>
@@ -279,7 +332,6 @@ export const ProductForm = ({
             </Form.Item>
             <Form.Item
                 label="Brand"
-                name="brandId"
                 validateStatus={formik.errors.brandId && formik.touched.brandId ? 'error' : ''}
                 help={formik.errors.brandId && formik.touched.brandId ? formik.errors.brandId : null}>
                 <Select
@@ -297,7 +349,7 @@ export const ProductForm = ({
 
             <Form.Item label=" ">
                 <Button type="primary" htmlType="submit" disabled={!formik.isValid || !formik.dirty}>
-                    {id === 0 ? 'Create' : 'Update'}
+                    {productId === 0 ? 'Create' : 'Update'}
                 </Button>
             </Form.Item>
         </Form>

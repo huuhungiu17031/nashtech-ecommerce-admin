@@ -12,6 +12,7 @@ const store = createStore({
     authType: 'cookie',
     cookieDomain: window.location.hostname,
     cookieSecure: false,
+    // refresh: refresh,
 });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

@@ -1,25 +1,18 @@
 import { useState } from 'react';
 import type { MenuProps } from 'antd';
-import { Avatar, Button, Dropdown, Layout, Menu, Space, theme } from 'antd';
+import { Button, Layout, Menu, theme } from 'antd';
 import { Link, Outlet } from 'react-router-dom';
-import {
-    OrderedListOutlined,
-    ProductOutlined,
-    UserOutlined,
-    LogoutOutlined,
-} from '@ant-design/icons';
-import { BreadCrumbCustom } from '@/components';
+import { OrderedListOutlined, ProductOutlined, UserOutlined } from '@ant-design/icons';
+import { BreadCrumbCustom, DropdownCustom } from '@/components';
+import { ItemType } from 'antd/es/menu/interface';
+import useSignOut from 'react-auth-kit/hooks/useSignOut';
+import { autoFetch } from '@/shared';
 
 const { Header, Content, Footer, Sider } = Layout;
 
 type MenuItem = Required<MenuProps>['items'][number];
 
-function getItem(
-    label: React.ReactNode,
-    key: React.Key,
-    icon?: React.ReactNode,
-    children?: MenuItem[],
-): MenuItem {
+function getItem(label: React.ReactNode, key: React.Key, icon?: React.ReactNode, children?: MenuItem[]): MenuItem {
     return {
         key,
         icon,
@@ -31,61 +24,43 @@ function getItem(
         ),
     } as MenuItem;
 }
-function getItemDropdown(
-    label: React.ReactNode,
-    key: React.Key,
-    icon?: React.ReactNode,
-    func?: () => void,
-    children?: MenuItem[],
-): MenuItem {
-    return {
-        key,
-        icon,
-        children,
-        label: (
-            <Button onClick={() => func} className="w-full text-base font-bold ml-2" key={key}>
-                {label}
-            </Button>
-        ),
-    } as MenuItem;
-}
-
-const handleLogout = () => {
-    console.log('LOGOUT');
-};
 
 const items: MenuItem[] = [
-    getItem('Category', 'category', <OrderedListOutlined />, [
-        getItem('Create category', 'category/form/0'),
-    ]),
+    getItem('Category', 'category', <OrderedListOutlined />, [getItem('Create category', 'category/form/0')]),
     getItem('Product', 'product', <ProductOutlined />),
     getItem('User Management', 'user', <UserOutlined />),
 ];
-
-const itemss: MenuItem[] = [getItem('User Management', 'user', <UserOutlined />)];
 
 const DefaultLayout = () => {
     const [collapsed, setCollapsed] = useState(false);
     const {
         token: { colorBgContainer, borderRadiusLG },
     } = theme.useToken();
-
+    const signOut = useSignOut();
+    const handleLogout = async () => {
+        try {
+            await autoFetch.post('user/logout');
+            signOut();
+            window.location.reload();
+        } catch (error) {
+            console.log('ERROR LOGOUT');
+        }
+    };
+    const dropdownItems: ItemType[] = [
+        {
+            key: '1',
+            label: <Button onClick={handleLogout}>Logout</Button>,
+        },
+    ];
     return (
         <Layout className="overflow-hidden h-screen">
-            <Header className="sticky top-0 left-0 z-20"></Header>
+            <Header className="sticky top-0 left-0 z-20">
+                <DropdownCustom items={dropdownItems}></DropdownCustom>
+            </Header>
             <Layout>
-                <Sider
-                    width={'15%'}
-                    collapsible
-                    collapsed={collapsed}
-                    onCollapse={value => setCollapsed(value)}>
+                <Sider width={'15%'} collapsible collapsed={collapsed} onCollapse={value => setCollapsed(value)}>
                     <div className="demo-logo-vertical" />
-                    <Menu
-                        theme="dark"
-                        defaultSelectedKeys={['category']}
-                        mode="inline"
-                        items={items}
-                    />
+                    <Menu theme="dark" defaultSelectedKeys={['category']} mode="inline" items={items} />
                 </Sider>
                 <Layout>
                     <Content className="overflow-y-scroll my-0 mx-4">
@@ -100,9 +75,7 @@ const DefaultLayout = () => {
                             <Outlet />
                         </div>
                     </Content>
-                    <Footer style={{ textAlign: 'center' }}>
-                        Ant Design ©{new Date().getFullYear()} Created by Ant UED
-                    </Footer>
+                    <Footer style={{ textAlign: 'center' }}>©{new Date().getFullYear()} Created by Hung Nguyen</Footer>
                 </Layout>
             </Layout>
         </Layout>
